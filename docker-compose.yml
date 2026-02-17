@@ -4,7 +4,7 @@ services:
   postgres:
     image: postgres:14-alpine
     environment:
-      POSTGRES_DB: payment_gateway_dev
+      POSTGRES_DB: mypay
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
@@ -23,7 +23,7 @@ services:
       - "5000:5000"
     environment:
       FLASK_ENV: development
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/payment_gateway_dev
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mypay
       REDIS_URL: redis://redis:6379/0
     depends_on:
       - postgres
