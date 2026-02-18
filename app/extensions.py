@@ -1,8 +1,7 @@
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
+from flask_migrate import Migrate
 from flask_socketio import SocketIO
-from redis import Redis
+from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -16,8 +15,8 @@ class RedisClient:
 
     def init_app(self, app):
         import redis
-        redis_url = app.config.get('REDIS_URL', 'redis://localhost:6379/0')
-        self.client = redis.from_url(redis_url, decode_responses=True)
+        #redis_url = app.config.get('REDIS_URL', 'redis://localhost:6379/0')
+        self.client = redis.Redis()
 
     def get(self, key):
         return self.client.get(key)

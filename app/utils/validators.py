@@ -59,7 +59,7 @@ def validate_phone_number(phone: str, country_code: Optional[str] = None) -> tup
     return True, None
 
 
-def validate_amount(amount: any, min_amount: float = 0.01, max_amount: float = 1000000.00) -> tuple[
+def validate_amount(amount: float, min_amount: float = 0.01, max_amount: float = 1000000.00) -> tuple[
     bool, Optional[str]]:
     """
     Validate payment amount

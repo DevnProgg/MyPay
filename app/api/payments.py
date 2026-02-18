@@ -25,7 +25,7 @@ def initialize_payment():
     Initialize a payment
 
     Headers:
-        - Idempotency-Key: UUID v4 for request idempotency
+        - Idempotency-Key: for request idempotency
 
     Body:
         {

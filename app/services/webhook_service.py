@@ -136,7 +136,7 @@ class WebhookService:
 
             if status == 'completed':
                 transaction.status = TransactionStatus.COMPLETED
-                transaction.completed_at = datetime.utcnow()
+                transaction.completed_at = datetime.now()
             elif status == 'failed':
                 transaction.status = TransactionStatus.FAILED
             elif status == 'refunded':
@@ -150,7 +150,7 @@ class WebhookService:
 
             # Mark webhook as processed
             webhook_event.processed = True
-            webhook_event.processed_at = datetime.utcnow()
+            webhook_event.processed_at = datetime.now()
 
             db.session.commit()
 
@@ -205,7 +205,7 @@ class WebhookService:
             else:
                 retry_interval = WebhookService.RETRY_SCHEDULE[webhook.retry_count]
 
-            time_since_creation = (datetime.utcnow() - webhook.created_at).total_seconds()
+            time_since_creation = (datetime.now() - webhook.created_at).total_seconds()
 
             if time_since_creation >= retry_interval:
                 try:
@@ -286,7 +286,7 @@ class WebhookService:
 
         if webhook_event:
             webhook_event.processed = True
-            webhook_event.processed_at = datetime.utcnow()
+            webhook_event.processed_at = datetime.now()
             db.session.commit()
 
     @staticmethod

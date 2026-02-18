@@ -42,8 +42,8 @@ class Transaction(db.Model):
     metadata = db.Column(JSONB)
 
     # Timestamps
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
     completed_at = db.Column(db.DateTime)
 
     # Relationships

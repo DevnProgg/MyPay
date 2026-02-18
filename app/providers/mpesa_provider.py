@@ -759,7 +759,7 @@ class MPesaProvider(PaymentProvider):
         Password = Base64(BusinessShortCode + Passkey + Timestamp)
         Timestamp = YYYYMMDDHHmmss (Nairobi time is fine for sandbox; use UTC for production)
         """
-        timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         raw = f"{self.shortcode}{self.passkey}{timestamp}"
         password = base64.b64encode(raw.encode("utf-8")).decode("utf-8")
         return timestamp, password

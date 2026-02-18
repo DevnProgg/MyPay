@@ -15,14 +15,14 @@ def get_encryption_key():
 _cipher = Fernet(get_encryption_key())
 
 
-def encrypt_value(value: str) -> str:
+def encrypt_value(value: str) -> str | None:
     """Encrypt a string value"""
     if not value:
         return None
     return _cipher.encrypt(value.encode()).decode()
 
 
-def decrypt_value(encrypted_value: str) -> str:
+def decrypt_value(encrypted_value: str) -> str | None:
     """Decrypt an encrypted value"""
     if not encrypted_value:
         return None

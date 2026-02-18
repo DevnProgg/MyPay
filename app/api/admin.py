@@ -28,22 +28,22 @@ def get_providers():
         providers = list_available_providers()
 
         # Get provider configurations from database
-        configs = ProviderConfig.query.all()
-        config_dict = {config.provider_name: config for config in configs}
-
-        provider_list = []
-        for provider in providers:
-            config = config_dict.get(provider)
-            provider_list.append({
-                'name': provider,
-                'is_configured': config is not None,
-                'is_active': config.is_active if config else False,
-                'last_updated': config.updated_at.isoformat() if config else None
-            })
+        # configs = ProviderConfig.query.all()
+        # config_dict = {config.provider_name: config for config in configs}
+        #
+        # provider_list = []
+        # for provider in providers:
+        #     config = config_dict.get(provider)
+        #     provider_list.append({
+        #         'name': provider,
+        #         'is_configured': config is not None,
+        #         'is_active': config.is_active if config else False,
+        #         'last_updated': config.updated_at.isoformat() if config else None
+        #     })
 
         return jsonify({
             'success': True,
-            'data': provider_list
+            'data': providers
         }), 200
 
     except Exception as e:
@@ -53,102 +53,102 @@ def get_providers():
         }), 500
 
 
-@admin_bp.route('/providers/<provider_name>/config', methods=['POST'])
-@jwt_required()
-def configure_provider(provider_name):
-    """
-    Configure a payment provider
-
-    Path Parameters:
-        provider_name: Name of the provider to configure
-
-    Body:
-        {
-            "api_key": "xxx",
-            "api_secret": "xxx",
-            "webhook_secret": "xxx",
-            "is_active": true,
-            "config": {
-                "additional": "configuration"
-            }
-        }
-    """
-    try:
-        data = request.get_json()
-
-        # Check if provider exists
-        if provider_name not in list_available_providers():
-            return jsonify({
-                'success': False,
-                'error': f'Unknown provider: {provider_name}'
-            }), 400
-
-        # Get or create provider config
-        config = ProviderConfig.query.filter_by(provider_name=provider_name).first()
-
-        if not config:
-            config = ProviderConfig(provider_name=provider_name)
-            db.session.add(config)
-
-        # Update configuration
-        if 'api_key' in data:
-            config.api_key = data['api_key']
-
-        if 'api_secret' in data:
-            config.api_secret = data['api_secret']
-
-        if 'webhook_secret' in data:
-            config.webhook_secret = data['webhook_secret']
-
-        if 'is_active' in data:
-            config.is_active = data['is_active']
-
-        if 'config' in data:
-            config.config = data['config']
-
-        db.session.commit()
-
-        return jsonify({
-            'success': True,
-            'data': config.to_dict(include_secrets=False)
-        }), 200
-
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
-
-@admin_bp.route('/providers/<provider_name>/config', methods=['GET'])
-@jwt_required()
-def get_provider_config(provider_name):
-    """
-    Get provider configuration (without secrets)
-
-    Path Parameters:
-        provider_name: Name of the provider
-    """
-    try:
-        config = ProviderConfig.query.filter_by(provider_name=provider_name).first()
-
-        if not config:
-            return jsonify({
-                'success': False,
-                'error': 'Provider not configured'
-            }), 404
-
-        return jsonify({
-            'success': True,
-            'data': config.to_dict(include_secrets=False)
-        }), 200
-
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+# @admin_bp.route('/providers/<provider_name>/config', methods=['POST'])
+# @jwt_required()
+# def configure_provider(provider_name):
+#     """
+#     Configure a payment provider
+#
+#     Path Parameters:
+#         provider_name: Name of the provider to configure
+#
+#     Body:
+#         {
+#             "api_key": "xxx",
+#             "api_secret": "xxx",
+#             "webhook_secret": "xxx",
+#             "is_active": true,
+#             "config": {
+#                 "additional": "configuration"
+#             }
+#         }
+#     """
+#     try:
+#         data = request.get_json()
+#
+#         # Check if provider exists
+#         if provider_name not in list_available_providers():
+#             return jsonify({
+#                 'success': False,
+#                 'error': f'Unknown provider: {provider_name}'
+#             }), 400
+#
+#         # Get or create provider config
+#         config = ProviderConfig.query.filter_by(provider_name=provider_name).first()
+#
+#         if not config:
+#             config = ProviderConfig(provider_name=provider_name)
+#             db.session.add(config)
+#
+#         # Update configuration
+#         if 'api_key' in data:
+#             config.api_key = data['api_key']
+#
+#         if 'api_secret' in data:
+#             config.api_secret = data['api_secret']
+#
+#         if 'webhook_secret' in data:
+#             config.webhook_secret = data['webhook_secret']
+#
+#         if 'is_active' in data:
+#             config.is_active = data['is_active']
+#
+#         if 'config' in data:
+#             config.config = data['config']
+#
+#         db.session.commit()
+#
+#         return jsonify({
+#             'success': True,
+#             'data': config.to_dict(include_secrets=False)
+#         }), 200
+#
+#     except Exception as e:
+#         db.session.rollback()
+#         return jsonify({
+#             'success': False,
+#             'error': str(e)
+#         }), 500
+#
+#
+# @admin_bp.route('/providers/<provider_name>/config', methods=['GET'])
+# @jwt_required()
+# def get_provider_config(provider_name):
+#     """
+#     Get provider configuration (without secrets)
+#
+#     Path Parameters:
+#         provider_name: Name of the provider
+#     """
+#     try:
+#         config = ProviderConfig.query.filter_by(provider_name=provider_name).first()
+#
+#         if not config:
+#             return jsonify({
+#                 'success': False,
+#                 'error': 'Provider not configured'
+#             }), 404
+#
+#         return jsonify({
+#             'success': True,
+#             'data': config.to_dict(include_secrets=False)
+#         }), 200
+#
+#     except Exception as e:
+#         return jsonify({
+#             'success': False,
+#             'error': str(e)
+#         }), 500
 
 
 @admin_bp.route('/statistics', methods=['GET'])
@@ -171,12 +171,12 @@ def get_statistics():
         if start_date:
             start_date = datetime.fromisoformat(start_date)
         else:
-            start_date = datetime.utcnow() - timedelta(days=30)
+            start_date = datetime.now() - timedelta(days=30)
 
         if end_date:
             end_date = datetime.fromisoformat(end_date)
         else:
-            end_date = datetime.utcnow()
+            end_date = datetime.now()
 
         # Transaction statistics
         query = Transaction.query.filter(

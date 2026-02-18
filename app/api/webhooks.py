@@ -19,10 +19,9 @@ def receive_webhook(provider):
     Receive webhook from payment provider
 
     Path Parameters:
-        provider: Payment provider name (mpesa, stripe, cpay)
+        provider: Payment provider name (mpesa, cpay)
 
     Headers:
-        - Stripe-Signature (for Stripe)
         - X-CPay-Signature (for CPay)
         - Various headers depending on provider
 
@@ -45,9 +44,7 @@ def receive_webhook(provider):
 
         # Get signature from headers (provider-specific)
         signature = None
-        if provider == 'stripe':
-            signature = request.headers.get('Stripe-Signature')
-        elif provider == 'mpesa':
+        if provider == 'mpesa':
             # M-Pesa doesn't use signatures, but we can verify source IP
             signature = None
         elif provider == 'cpay':
@@ -64,7 +61,6 @@ def receive_webhook(provider):
             raw_payload=raw_payload
         )
 
-        # Process webhook asynchronously (in production, use Celery)
         # For now, process synchronously
         success = WebhookService.process_webhook(webhook_event.id)
 

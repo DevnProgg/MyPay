@@ -1,6 +1,7 @@
 """
 Health Check and System Monitoring Endpoints
 """
+from typing import Dict
 
 from flask import Blueprint, jsonify
 from datetime import datetime
@@ -21,14 +22,14 @@ def health_check():
         200 if system is healthy
         503 if system has issues
     """
-    health_status = {
+    health_status : Dict[str, Dict[str,str] | str]= {
         'status': 'healthy',
-        'timestamp': datetime.utcnow().isoformat(),
+        'timestamp': datetime.now().isoformat(),
         'service': 'payment-gateway',
         'version': '1.0.0'
     }
 
-    checks = {}
+    checks : Dict[str, Dict[str, str] | str] = {}
     overall_healthy = True
 
     # Database check
@@ -83,7 +84,7 @@ def liveness_probe():
     """
     return jsonify({
         'status': 'alive',
-        'timestamp': datetime.utcnow().isoformat()
+        'timestamp': datetime.now().isoformat()
     }), 200
 
 
@@ -117,7 +118,7 @@ def readiness_probe():
     return jsonify({
         'status': 'ready' if ready else 'not_ready',
         'checks': checks,
-        'timestamp': datetime.utcnow().isoformat()
+        'timestamp': datetime.now().isoformat()
     }), status_code
 
 
@@ -152,14 +153,14 @@ def metrics():
 
         total_audit_logs = AuditLog.query.count()
 
-        # Database connection pool metrics (SQLAlchemy)
+        # Database connection pool metrics
         pool = db.engine.pool
         pool_size = pool.size()
         pool_checked_out = pool.checkedout()
         pool_overflow = pool.overflow()
 
         return jsonify({
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': datetime.now().isoformat(),
             'system': {
                 'cpu_percent': cpu_percent,
                 'memory': {
@@ -216,6 +217,6 @@ def version():
     return jsonify({
         'service': 'payment-gateway',
         'version': '1.0.0',
-        'build_date': '2024-01-01',
+        'build_date': '2026-02-14',
         'environment': os.getenv('FLASK_ENV', 'production')
     }), 200

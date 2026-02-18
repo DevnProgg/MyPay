@@ -1,5 +1,7 @@
 from marshmallow import Schema, fields, validates, ValidationError
 
+from app.providers import list_available_providers
+
 
 class CustomerSchema(Schema):
     """Customer data schema"""
@@ -24,7 +26,7 @@ class InitializePaymentSchema(Schema):
 
     @validates('provider')
     def validate_provider(self, value):
-        allowed_providers = ['mpesa', 'stripe', 'visa', 'cpay']
+        allowed_providers = list_available_providers()
         if value.lower() not in allowed_providers:
             raise ValidationError(f'Provider must be one of: {", ".join(allowed_providers)}')
 

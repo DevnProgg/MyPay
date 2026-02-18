@@ -154,7 +154,7 @@ class PaymentService:
 
             if new_status == 'completed':
                 transaction.status = TransactionStatus.COMPLETED
-                transaction.completed_at = datetime.utcnow()
+                transaction.completed_at = datetime.now()
             elif new_status == 'failed':
                 transaction.status = TransactionStatus.FAILED
 

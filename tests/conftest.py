@@ -133,12 +133,3 @@ def mock_stripe_payment_intent():
         'client_secret': 'pi_mock_123_secret_mock',
         'payment_method_types': ['card']
     }
-
-
-@pytest.fixture
-def redis_client(app):
-    """Redis client for testing"""
-    from app.extensions import redis_client
-    yield redis_client
-    # Cleanup: flush test keys
-    redis_client.client.flushdb()

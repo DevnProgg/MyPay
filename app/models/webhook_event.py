@@ -25,7 +25,7 @@ class WebhookEvent(db.Model):
     error_message = db.Column(db.Text)
 
     # Timestamps
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
     processed_at = db.Column(db.DateTime)
 
     def to_dict(self):

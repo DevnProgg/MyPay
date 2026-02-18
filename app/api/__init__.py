@@ -25,7 +25,10 @@ def register_blueprints(app):
     Args:
         app: Flask application instance
     """
-    app.register_blueprint(payments_bp, url_prefix='/api/v1/payments')
+
+    url_base : str = '/api/v1'
+
+    app.register_blueprint(payments_bp, url_prefix=f'{url_base}/payments')
     app.register_blueprint(webhooks_bp, url_prefix='/api/v1/webhooks')
     app.register_blueprint(admin_bp, url_prefix='/api/v1/admin')
     app.register_blueprint(health_bp, url_prefix='/api/v1')

@@ -20,7 +20,7 @@ class AuditLog(db.Model):
     user_agent = db.Column(db.String(500))
 
     # Timestamp
-    timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
+    timestamp = db.Column(db.DateTime, nullable=False, default=datetime.now, index=True)
 
     def to_dict(self):
         return {
