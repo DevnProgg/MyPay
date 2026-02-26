@@ -8,23 +8,21 @@ This application serves as a central hub for payment operations. Instead of inte
 
 ## Features
 
-- **Multi-Provider Support:** Easily extensible to support various payment providers. Comes with M-Pesa and C-Pay pre-integrated.
+- **Multi-Provider Support:** Architected to support various payment providers. Currently integrated with **Standard Bank Pay**.
 - **Unified REST API:** A single API for initiating, querying, and managing payments.
-- **Webhook Handling:** A robust system for receiving and processing asynchronous notifications from providers.
-- **Idempotency:** Ensures that repeated API requests do not result in duplicate transactions.
-- **Audit Logging:** Keeps a detailed log of all significant events for traceability and debugging.
+- **Webhook Handling:** Robust system for receiving and processing asynchronous notifications with signature verification.
+- **Idempotency:** Ensures that repeated API requests do not result in duplicate transactions using `Idempotency-Key` headers.
+- **Audit Logging:** Detailed logs of all significant events for traceability and debugging.
 - **Containerized:** Ready to be deployed and scaled using Docker and Docker Compose.
-- **Real-time Updates:** Uses WebSockets to push real-time event updates to connected clients.
+- **Background Processing:** Uses Celery and Redis for asynchronous task execution (webhooks, reconciliation).
 
 ## Getting Started
-
-The recommended way to run the project is by using Docker and Docker Compose, which handles the setup of the application, database, and Redis cache.
 
 ### Prerequisites
 
 - Git
-- Docker
-- Docker Compose
+- Docker and Docker Compose
+- Python 3.12+ (if running without Docker)
 
 ### Installation & Running
 
@@ -35,32 +33,45 @@ The recommended way to run the project is by using Docker and Docker Compose, wh
     ```
 
 2.  **Configuration:**
-    The project uses a `.env` file for configuration. While a default configuration is provided in `docker-compose.yml` for development, you can create a `.env` file to override settings, especially for production.
+    The project uses environment variables. For Docker, defaults are set in `docker-compose.yml`. For local development, create a `.env` file in the root:
+    ```env
+    SECRET_KEY=your-secret-key
+    JWT_SECRET_KEY=your-jwt-secret
+    DATABASE_URI=postgresql://openpg:dev@db:5432/payment_gateway_dev
+    REDIS_HOST=redis
+    REDIS_PORT=6379
+    ```
 
-3.  **Build and run the application:**
+3.  **Build and run with Docker:**
     ```bash
     docker-compose up --build -d
     ```
-    This command will build the Docker image, start the application container along with PostgreSQL and Redis, and run database migrations. The application will be accessible at `http://localhost:5000`.
+    The application will be accessible at `http://localhost:5000`.
 
 ### Running Tests
 
-The project uses `pytest` for testing. To run the test suite, you can execute the following command to run the tests inside the Docker container:
-
+Execute tests within the Docker environment:
 ```bash
 docker-compose exec app pytest
 ```
 
 ## Project Structure
 
-- **/app:** Main application source code.
-- **/app/api:** Contains all the API endpoint definitions (payments, webhooks, etc.).
-- **/app/providers:** Houses the specific logic for each integrated payment provider.
-- **/app/services:** Contains the core business logic.
-- **/app/models:** Defines the SQLAlchemy database models.
-- **/tests:** Contains unit and integration tests.
-- **/docs:** Includes project documentation like the developer guide.
+- **`/app`**: Core application logic.
+    - **`/api`**: API blueprints and endpoint definitions.
+    - **`/models`**: SQLAlchemy database models.
+    - **`/providers`**: Individual payment provider implementations.
+    - **`/services`**: Business logic layer (Payment, Auth, Webhooks).
+    - **`/utils`**: Helper functions (Encryption, Logger, Decorators).
+- **`/docs`**: Project documentation and architecture diagrams.
+- **`/tests`**: Unit and integration test suites.
+- **`/logs`**: Application log files.
 
 ## Documentation
 
-For more detailed information on the architecture, API endpoints, and developer guidelines, please refer to the documents in the `/docs` directory.
+Comprehensive documentation is available in the `/docs` directory:
+
+-   [**API Documentation**](./docs/API_DOCUMENTATION.md): Detailed information on REST endpoints, authentication, and idempotency.
+-   [**Developer Guide**](./docs/DEVELOPER_GUIDE.md): Architecture overview, guide for adding new providers, and development workflow.
+-   [**Architecture Diagrams**](./docs/architecture.jpg): Visual representation of the system architecture.
+-   [**Database Schema**](./docs/EER.jpg): Entity Relationship Diagram of the gateway.
