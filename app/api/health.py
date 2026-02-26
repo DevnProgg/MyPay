@@ -7,6 +7,7 @@ from flask import Blueprint, jsonify
 from datetime import datetime
 import os
 import psutil
+from sqlalchemy import text
 
 from app.extensions import db, redis_client
 
@@ -34,7 +35,7 @@ def health_check():
 
     # Database check
     try:
-        db.session.execute('SELECT 1')
+        db.session.execute(text('SELECT 1'))
         checks['database'] = {
             'status': 'healthy',
             'message': 'Database connection OK'
@@ -74,53 +75,6 @@ def health_check():
     status_code = 200 if overall_healthy else 503
 
     return jsonify(health_status), status_code
-
-
-@health_bp.route('/health/live', methods=['GET'])
-def liveness_probe():
-    """
-    Kubernetes liveness probe
-    Returns 200 if the application is running
-    """
-    return jsonify({
-        'status': 'alive',
-        'timestamp': datetime.now().isoformat()
-    }), 200
-
-
-@health_bp.route('/health/ready', methods=['GET'])
-def readiness_probe():
-    """
-    Kubernetes readiness probe
-    Returns 200 if the application is ready to serve traffic
-    """
-    ready = True
-    checks = {}
-
-    # Check database
-    try:
-        db.session.execute('SELECT 1')
-        checks['database'] = 'ready'
-    except Exception as e:
-        checks['database'] = 'not_ready'
-        ready = False
-
-    # Check Redis
-    try:
-        redis_client.client.ping()
-        checks['redis'] = 'ready'
-    except Exception as e:
-        checks['redis'] = 'not_ready'
-        ready = False
-
-    status_code = 200 if ready else 503
-
-    return jsonify({
-        'status': 'ready' if ready else 'not_ready',
-        'checks': checks,
-        'timestamp': datetime.now().isoformat()
-    }), status_code
-
 
 @health_bp.route('/metrics', methods=['GET'])
 def metrics():
@@ -207,16 +161,3 @@ def metrics():
         return jsonify({
             'error': str(e)
         }), 500
-
-
-@health_bp.route('/version', methods=['GET'])
-def version():
-    """
-    Get application version information
-    """
-    return jsonify({
-        'service': 'payment-gateway',
-        'version': '1.0.0',
-        'build_date': '2026-02-14',
-        'environment': os.getenv('FLASK_ENV', 'production')
-    }), 200

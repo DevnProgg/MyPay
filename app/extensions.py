@@ -1,12 +1,11 @@
 from flask_jwt_extended import JWTManager
-from flask_migrate import Migrate
-from flask_socketio import SocketIO
 from flask_sqlalchemy import SQLAlchemy
 
-db = SQLAlchemy()
-migrate = Migrate()
+from app.extentions.celery_extention import create_celery
+
 jwt = JWTManager()
-socketio = SocketIO()
+db = SQLAlchemy()
+celery_app = create_celery()
 
 
 class RedisClient:
@@ -15,8 +14,8 @@ class RedisClient:
 
     def init_app(self, app):
         import redis
-        #redis_url = app.config.get('REDIS_URL', 'redis://localhost:6379/0')
-        self.client = redis.Redis()
+        from app.config import Config
+        self.client = redis.client.StrictRedis(host=Config.REDIS_HOST, port=Config.REDIS_PORT, db=Config.REDIS_DB)
 
     def get(self, key):
         return self.client.get(key)
@@ -32,3 +31,6 @@ class RedisClient:
 
 
 redis_client = RedisClient()
+
+
+

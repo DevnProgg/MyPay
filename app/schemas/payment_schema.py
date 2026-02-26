@@ -17,7 +17,6 @@ class InitializePaymentSchema(Schema):
     amount = fields.Decimal(required=True, places=2)
     currency = fields.Str(required=True)
     customer = fields.Nested(CustomerSchema, required=True)
-    metadata = fields.Dict(required=False)
 
     @validates('amount')
     def validate_amount(self, value):
@@ -31,16 +30,6 @@ class InitializePaymentSchema(Schema):
             raise ValidationError(f'Provider must be one of: {", ".join(allowed_providers)}')
 
 
-class RefundPaymentSchema(Schema):
-    """Refund payment schema"""
-    amount = fields.Decimal(required=False, places=2)
-    reason = fields.Str(required=False)
-
-    @validates('amount')
-    def validate_amount(self, value):
-        if value is not None and value <= 0:
-            raise ValidationError('Refund amount must be greater than 0')
-
 
 class TransactionSchema(Schema):
     """Transaction response schema"""
@@ -53,7 +42,6 @@ class TransactionSchema(Schema):
     status = fields.Str(dump_only=True)
     customer = fields.Dict(dump_only=True)
     payment_method = fields.Str(dump_only=True)
-    metadata = fields.Dict(dump_only=True)
     provider_response = fields.Dict(dump_only=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)

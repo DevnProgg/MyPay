@@ -6,7 +6,6 @@ from app.extensions import db
 from app.models import Transaction, TransactionStatus
 from app.services.audit_service import AuditService
 from app.providers import get_provider
-from app.websockets.events import emit_transaction_update
 
 
 class PaymentService:
@@ -19,7 +18,8 @@ class PaymentService:
             currency: str,
             customer_data: Dict[str, Any],
             metadata: Optional[Dict[str, Any]] = None,
-            idempotency_key: Optional[str] = None
+            idempotency_key: Optional[str] = None,
+            api_key: str = None
     ) -> Transaction:
         """
         Initialize a new payment transaction
@@ -31,6 +31,7 @@ class PaymentService:
             customer_data: Customer information
             metadata: Additional metadata
             idempotency_key: Idempotency key for request
+            api_key: merchant API key
 
         Returns:
             Transaction object
@@ -72,12 +73,12 @@ class PaymentService:
             }
         )
 
-        # Emit WebSocket event
-        emit_transaction_update(transaction, 'payment.initiated')
+        # # Emit WebSocket event
+        # emit_transaction_update(transaction, 'payment.initiated')
 
         try:
             # Initialize payment with provider
-            provider_instance = get_provider(provider)
+            provider_instance = get_provider(provider, api_key)
             result = provider_instance.initialize_payment(
                 amount=amount,
                 currency=currency,
@@ -102,8 +103,8 @@ class PaymentService:
                 }
             )
 
-            # Emit WebSocket event
-            emit_transaction_update(transaction, 'payment.processing')
+            # # Emit WebSocket event
+            # emit_transaction_update(transaction, 'payment.processing')
 
         except Exception as e:
             transaction.status = TransactionStatus.FAILED
@@ -117,20 +118,21 @@ class PaymentService:
                 event_data={'error': str(e)}
             )
 
-            # Emit WebSocket event
-            emit_transaction_update(transaction, 'payment.failed')
+            # # Emit WebSocket event
+            # emit_transaction_update(transaction, 'payment.failed')
 
             raise
 
         return transaction
 
     @staticmethod
-    def verify_payment(transaction_id: uuid.UUID) -> Transaction:
+    def verify_payment(transaction_id: uuid.UUID, api_key : str) -> Transaction:
         """
         Verify payment status with provider
 
         Args:
             transaction_id: Transaction UUID
+            api_key:
 
         Returns:
             Updated transaction
@@ -173,8 +175,8 @@ class PaymentService:
                     }
                 )
 
-                # Emit WebSocket event
-                emit_transaction_update(transaction, f'payment.{transaction.status}')
+                # # Emit WebSocket event
+                # emit_transaction_update(transaction, f'payment.{transaction.status}')
 
         except Exception as e:
             AuditService.log_event(
@@ -186,75 +188,6 @@ class PaymentService:
 
         return transaction
 
-    @staticmethod
-    def refund_payment(
-            transaction_id: uuid.UUID,
-            amount: Optional[float] = None,
-            reason: Optional[str] = None
-    ) -> Transaction:
-        """
-        Process payment refund
-
-        Args:
-            transaction_id: Transaction UUID
-            amount: Refund amount (None for full refund)
-            reason: Refund reason
-
-        Returns:
-            Updated transaction
-        """
-        transaction = Transaction.query.get(transaction_id)
-
-        if not transaction:
-            raise ValueError(f'Transaction {transaction_id} not found')
-
-        if transaction.status != TransactionStatus.COMPLETED:
-            raise ValueError('Can only refund completed transactions')
-
-        # Log refund initiation
-        AuditService.log_event(
-            transaction_id=transaction.id,
-            event_type='refund.initiated',
-            event_data={
-                'amount': amount,
-                'reason': reason
-            }
-        )
-
-        try:
-            provider_instance = get_provider(transaction.provider)
-            result = provider_instance.refund_payment(
-                provider_transaction_id=transaction.provider_transaction_id,
-                amount=amount,
-                reason=reason
-            )
-
-            transaction.status = TransactionStatus.REFUNDED
-            transaction.provider_response = {
-                **transaction.provider_response,
-                'refund': result
-            }
-            db.session.commit()
-
-            # Log refund completion
-            AuditService.log_event(
-                transaction_id=transaction.id,
-                event_type='refund.completed',
-                event_data=result
-            )
-
-            # Emit WebSocket event
-            emit_transaction_update(transaction, 'refund.completed')
-
-        except Exception as e:
-            AuditService.log_event(
-                transaction_id=transaction.id,
-                event_type='refund.failed',
-                event_data={'error': str(e)}
-            )
-            raise
-
-        return transaction
 
     @staticmethod
     def get_transaction(transaction_id: uuid.UUID) -> Optional[Transaction]:

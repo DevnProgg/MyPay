@@ -12,7 +12,6 @@ from app.extensions import db
 from app.models import WebhookEvent, Transaction, TransactionStatus
 from app.providers import get_provider
 from app.services.audit_service import AuditService
-from app.websockets.events import emit_transaction_update
 
 
 class WebhookService:
@@ -166,8 +165,7 @@ class WebhookService:
                 }
             )
 
-            # Emit WebSocket event
-            emit_transaction_update(transaction, event_type)
+            # s
 
             return True
 

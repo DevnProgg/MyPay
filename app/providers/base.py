@@ -59,29 +59,6 @@ class PaymentProvider(ABC):
         pass
 
     @abstractmethod
-    def refund_payment(
-            self,
-            provider_transaction_id: str,
-            amount: Optional[float] = None,
-            reason: Optional[str] = None
-    ) -> Dict[str, Any]:
-        """
-        Process a refund
-
-        Args:
-            provider_transaction_id: Provider's transaction ID
-            amount: Refund amount (None for full refund)
-            reason: Refund reason
-
-        Returns:
-            Dict containing:
-                - refund_id: Refund transaction ID
-                - status: Refund status
-                - amount: Refunded amount
-        """
-        pass
-
-    @abstractmethod
     def verify_webhook_signature(self, payload: bytes, signature: str) -> bool:
         """
         Verify webhook signature
@@ -129,11 +106,6 @@ class PaymentInitializationError(PaymentProviderError):
 
 class PaymentVerificationError(PaymentProviderError):
     """Raised when payment verification fails"""
-    pass
-
-
-class RefundError(PaymentProviderError):
-    """Raised when refund processing fails"""
     pass
 
 

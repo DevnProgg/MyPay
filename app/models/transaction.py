@@ -38,9 +38,6 @@ class Transaction(db.Model):
     # Payment method
     payment_method = db.Column(db.String(50))  # mpesa, card, etc.
 
-    # Additional data
-    metadata = db.Column(JSONB)
-
     # Timestamps
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
@@ -67,7 +64,6 @@ class Transaction(db.Model):
                 'name': self.customer_name
             },
             'payment_method': self.payment_method,
-            'metadata': self.metadata,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'completed_at': self.completed_at.isoformat() if self.completed_at else None

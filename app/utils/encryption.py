@@ -1,29 +1,60 @@
-from cryptography.fernet import Fernet
+import hashlib
 import os
 import base64
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+def encrypt_response(response: str, merchant_key: str) -> dict:
+    """
+    Encrypt API response using AES-256-GCM.
+
+    Returns a transport-safe payload the merchant can decrypt.
+    """
+
+    key = str(merchant_key).encode()
+    if len(key) < 32:
+        key = key.ljust(32, b"\0")
+    else:
+        key = key[:32]
+
+    aesgcm = AESGCM(key)
+
+    # Generate random IV (12 bytes for GCM)
+    iv = os.urandom(12)
+
+    # Serialize payload
+    plaintext = response.encode()
+
+    # Encrypt
+    ciphertext = aesgcm.encrypt(iv, plaintext, None)
+
+    #Return transport-safe structure
+    return {
+        "data": base64.b64encode(ciphertext).decode(),
+        "iv": base64.b64encode(iv).decode(),
+        "alg": "AES-256-GCM"
+    }
+
+import secrets
 
 
-def get_encryption_key():
-    """Get or generate encryption key"""
-    key = os.getenv('ENCRYPTION_KEY')
-    if not key:
-        # Generate a key for development
-        key = base64.urlsafe_b64encode(os.urandom(32)).decode()
-    return key.encode() if isinstance(key, str) else key
+def generate_merchant_api_key(prefix: str = "mch_live",length: int = 32) -> str:
+    """
+    Generate a cryptographically secure merchant API key.
 
+    Args:
+        prefix: Key namespace
+        length: Number of random bytes (not characters)
 
-_cipher = Fernet(get_encryption_key())
+    Returns:
+        str: Secure API key
+    """
 
+    # Generate secure random bytes and encode URL-safe
+    random_part = secrets.token_urlsafe(length)
 
-def encrypt_value(value: str) -> str | None:
-    """Encrypt a string value"""
-    if not value:
-        return None
-    return _cipher.encrypt(value.encode()).decode()
+    return f"{prefix}_{random_part}"
 
-
-def decrypt_value(encrypted_value: str) -> str | None:
-    """Decrypt an encrypted value"""
-    if not encrypted_value:
-        return None
-    return _cipher.decrypt(encrypted_value.encode()).decode()
+def hash_string(string : str | None) -> str | None:
+    if isinstance(string, str):
+        return hashlib.sha256(string.encode()).hexdigest()
+    return None

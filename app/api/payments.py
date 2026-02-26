@@ -1,44 +1,41 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
 from marshmallow import ValidationError
-import uuid
 
+from app.errors import AppError, PaymentNotFound
 from app.schemas.payment_schema import (
     InitializePaymentSchema,
-    RefundPaymentSchema,
     TransactionSchema
 )
 from app.services.payment_service import PaymentService
 from app.services.idempotency_service import idempotent
+from app.utils.authorization import api_key_required
 
 payments_bp = Blueprint('payments', __name__)
 
 initialize_schema = InitializePaymentSchema()
-refund_schema = RefundPaymentSchema()
 transaction_schema = TransactionSchema()
 
 
 @payments_bp.route('/initialize', methods=['POST'])
 @idempotent(ttl=86400)
+@api_key_required()
 def initialize_payment():
     """
     Initialize a payment
 
     Headers:
         - Idempotency-Key: for request idempotency
+        - X-API_key : for request api key authentication
 
     Body:
         {
             "provider": "mpesa",
             "amount": 1000.00,
-            "currency": "KES",
+            "currency": "LSL",
             "customer": {
-                "phone": "+254700000000",
+                "phone": "+26657502734",
                 "email": "customer@example.com",
                 "name": "John Doe"
-            },
-            "metadata": {
-                "order_id": "ORD-12345"
             }
         }
     """
@@ -49,6 +46,9 @@ def initialize_payment():
         # Get idempotency key
         idempotency_key = request.headers.get('Idempotency-Key')
 
+        #Get api key
+        api_key = request.headers.get('X-API_Key')
+
         # Initialize payment
         transaction = PaymentService.initialize_payment(
             provider=data['provider'],
@@ -56,7 +56,8 @@ def initialize_payment():
             currency=data['currency'],
             customer_data=data['customer'],
             metadata=data.get('metadata'),
-            idempotency_key=idempotency_key
+            idempotency_key=idempotency_key,
+            api_key=api_key
         )
 
         return jsonify({
@@ -79,6 +80,7 @@ def initialize_payment():
 
 
 @payments_bp.route('/<uuid:transaction_id>', methods=['GET'])
+@api_key_required()
 def get_payment(transaction_id):
     """
     Get payment details
@@ -90,10 +92,7 @@ def get_payment(transaction_id):
         transaction = PaymentService.get_transaction(transaction_id)
 
         if not transaction:
-            return jsonify({
-                'success': False,
-                'error': 'Transaction not found'
-            }), 404
+            raise PaymentNotFound(str(transaction_id))
 
         return jsonify({
             'success': True,
@@ -101,13 +100,11 @@ def get_payment(transaction_id):
         }), 200
 
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        raise AppError(str(e))
 
 
 @payments_bp.route('/<uuid:transaction_id>/verify', methods=['POST'])
+@api_key_required()
 def verify_payment(transaction_id):
     """
     Verify payment status with provider
@@ -116,7 +113,8 @@ def verify_payment(transaction_id):
         - transaction_id: Transaction UUID
     """
     try:
-        transaction = PaymentService.verify_payment(transaction_id)
+
+        transaction = PaymentService.verify_payment(transaction_id, request.headers.get("Authorization"))
 
         return jsonify({
             'success': True,
@@ -124,71 +122,15 @@ def verify_payment(transaction_id):
         }), 200
 
     except ValueError as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 404
+        raise PaymentNotFound(str(e))
 
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        raise AppError(str(e))
 
-
-@payments_bp.route('/<uuid:transaction_id>/refund', methods=['POST'])
-@idempotent(ttl=86400)
-def refund_payment(transaction_id):
-    """
-    Process payment refund
-
-    Headers:
-        - Idempotency-Key: UUID v4 for request idempotency
-
-    Path Parameters:
-        - transaction_id: Transaction UUID
-
-    Body:
-        {
-            "amount": 500.00,  // Optional, full refund if not specified
-            "reason": "Customer request"
-        }
-    """
-    try:
-        data = refund_schema.load(request.json)
-
-        transaction = PaymentService.refund_payment(
-            transaction_id=transaction_id,
-            amount=data.get('amount'),
-            reason=data.get('reason')
-        )
-
-        return jsonify({
-            'success': True,
-            'data': transaction_schema.dump(transaction)
-        }), 200
-
-    except ValidationError as e:
-        return jsonify({
-            'success': False,
-            'error': 'Validation error',
-            'details': e.messages
-        }), 400
-
-    except ValueError as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
 
 
 @payments_bp.route('', methods=['GET'])
+@api_key_required()
 def list_payments():
     """
     List payments with filters
@@ -231,7 +173,4 @@ def list_payments():
         }), 200
 
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+       raise PaymentNotFound(str(e))

@@ -1,22 +1,22 @@
 from typing import Dict, Type
+
+from app.models import Account, ProviderConfig, ProviderTable
 from app.providers.base import PaymentProvider
-from app.providers.cpay_provider import CPayProvider
-from app.providers.mpesa_provider import MPesaProvider
-from flask import current_app
+from app.providers.standard_bank_pay_provider import StandardBankPayProvider
 
 # Provider registry
 PROVIDERS: Dict[str, Type[PaymentProvider]] = {
-    'cpay':  CPayProvider,
-    'mpesa': MPesaProvider,
+    "StandardBankPay" : StandardBankPayProvider
 }
 
 
-def get_provider(provider_name: str) -> PaymentProvider:
+def get_provider(provider_name: str, api_key : str) -> PaymentProvider:
     """
     Get provider instance by name.
 
     Args:
-        provider_name: Name of the provider ('cpay', 'mpesa', etc.)
+        provider_name: Name of the provider ('cpay', etc.)
+        api_key: Api key to use for authentication
 
     Returns:
         Initialized provider instance
@@ -29,56 +29,25 @@ def get_provider(provider_name: str) -> PaymentProvider:
     if not provider_class:
         raise ValueError(f'Unknown provider: {provider_name}')
 
-    config = _get_provider_config(provider_name.lower())
+    config = _get_merchant_provider_config(provider_name.lower(), api_key)
     return provider_class(config)
 
 
-def _get_provider_config(provider_name: str) -> dict:
-    """Get provider configuration from Flask app config."""
-
-    if provider_name == 'mpesa':
-        return {
-            # Required
-            'consumer_key':    current_app.config.get('MPESA_CONSUMER_KEY'),
-            'consumer_secret': current_app.config.get('MPESA_CONSUMER_SECRET'),
-            'shortcode':       current_app.config.get('MPESA_SHORTCODE'),
-            'passkey':         current_app.config.get('MPESA_PASSKEY'),
-            # Environment
-            'environment':       current_app.config.get('MPESA_ENV', 'sandbox'),
-            # Callback / result URLs
-            'callback_url':      current_app.config.get('MPESA_CALLBACK_URL', ''),
-            'result_url':        current_app.config.get('MPESA_RESULT_URL', ''),
-            'queue_timeout_url': current_app.config.get('MPESA_QUEUE_TIMEOUT_URL', ''),
-            # Optional – needed for B2C / reversal / status queries
-            'initiator_name':      current_app.config.get('MPESA_INITIATOR_NAME', ''),
-            'security_credential': current_app.config.get('MPESA_SECURITY_CREDENTIAL', ''),
-            # Payment behaviour
-            'transaction_type': current_app.config.get('MPESA_TRANSACTION_TYPE', 'CustomerPayBillOnline'),
-            'identifier_type':  current_app.config.get('MPESA_IDENTIFIER_TYPE', '4'),
-        }
-
-    elif provider_name == 'cpay':
-        return {
-            # Required
-            'api_key':      current_app.config.get('CPAY_API_KEY'),
-            'api_secret':   current_app.config.get('CPAY_API_SECRET'),
-            'client_code':  current_app.config.get('CPAY_CLIENT_CODE'),
-            # Optional / environment-specific
-            'base_url':     current_app.config.get(
-                                'CPAY_BASE_URL',
-                                'https://cpay-uat-env.chaperone.co.ls:5100'
-                            ),
-            'redirect_url': current_app.config.get('CPAY_REDIRECT_URL', ''),
-            # Set to False only when running against UAT with a self-signed cert
-            'verify_ssl':   current_app.config.get('CPAY_VERIFY_SSL', True),
-        }
-
-    return {}
-
+def _get_merchant_provider_config(provider_name: str, merchant_api_key: str) -> dict | None:
+    merchant_id = Account.query.filter_by(_api_key = merchant_api_key).first().to_dict()['merchant_id']
+    provider_id = ProviderTable.query.filter_by(name = provider_name).first().to_dict()['id']
+    if not merchant_id and not provider_id:
+        return None
+    else:
+        config = ProviderConfig.query.filter_by(merchant_id = merchant_id, provider_id = provider_id).get("config")
+        if not config:
+            return None
+        else:
+            return config
 
 def list_available_providers():
     """List all available providers."""
-    return list(PROVIDERS.keys())
+    return list(PROVIDERS)
 
 
 __all__ = ['get_provider', 'list_available_providers', 'PROVIDERS']
