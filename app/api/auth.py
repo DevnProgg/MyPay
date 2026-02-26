@@ -3,7 +3,7 @@ from flask import Blueprint, request, jsonify
 from marshmallow import ValidationError
 from app.errors.exceptions import BadRequest, AccountNotFound
 from app.schemas.AuthSchema import SignupSchema, AuthSchema, LoginSchema
-from app.services.auth_service import new_merchant, merchant_login
+from app.services.auth_service import new_merchant, merchant_login, admin_login_service
 
 auth_bp = Blueprint("auth", __name__)
 signup_schema = SignupSchema()
@@ -47,3 +47,20 @@ def login():
 
     except ValidationError as err:
         raise BadRequest(err.messages)
+
+@auth_bp.route("/admin/login", methods=["POST"])
+def admin_login():
+    try:
+        data = login_schema.load(request.json)
+
+        response = admin_login_service(data)
+        if response is None:
+            raise AccountNotFound("Admin not found")
+        return jsonify({
+            "success" : True,
+            "data" : response
+        }), 200
+    except ValidationError as err:
+        raise BadRequest(err.messages)
+    except AccountNotFound as err:
+        raise AccountNotFound("Admin not found")

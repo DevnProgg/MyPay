@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}System Health — PayGateway Admin{% endblock %}
+{% block topbar_title %}System Health{% endblock %}
+
+{% block content %}
+{% set checks   = health.get('checks', {}) %}
+{% set sys      = metrics.get('system', {}) %}
+{% set app      = metrics.get('application', {}) %}
+{% set pool     = app.get('database_pool', {}) %}
+
+<!-- Health checks -->
+<div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));margin-bottom:24px;">
+  {% for name, check in checks.items() %}
+  <div class="stat-card" style="border-color:{% if check.status == 'healthy' %}rgba(78,205,196,.25){% else %}rgba(255,107,107,.25){% endif %};">
+    <div class="flex items-center gap-2 mb-1">
+      <span class="health-dot {% if check.status == 'healthy' %}healthy{% else %}unhealthy{% endif %}"></span>
+      <div class="stat-label" style="margin-bottom:0;text-transform:capitalize;">{{ name }}</div>
+    </div>
+    <div class="stat-value" style="font-size:20px;color:{% if check.status == 'healthy' %}var(--blue){% else %}var(--coral){% endif %};">
+      {{ check.status | upper }}
+    </div>
+    <div class="stat-sub">{{ check.get('message', '') }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+
+  <!-- System resources -->
+  <div class="card">
+    <div class="section-title">System Resources</div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+
+      <!-- CPU -->
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <span style="font-size:12px;color:var(--muted);font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:.06em;">CPU</span>
+          <span class="mono" style="font-size:13px;">{{ sys.get('cpu_percent', 0) }}%</span>
+        </div>
+        <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;">
+          <div style="height:100%;width:{{ sys.get('cpu_percent', 0) }}%;background:linear-gradient(90deg,var(--blue),var(--coral));border-radius:3px;transition:width .8s ease;"></div>
+        </div>
+      </div>
+
+      <!-- Memory -->
+      {% set mem = sys.get('memory', {}) %}
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <span style="font-size:12px;color:var(--muted);font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:.06em;">Memory</span>
+          <span class="mono" style="font-size:13px;">{{ mem.get('percent', 0) }}%</span>
+        </div>
+        <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;">
+          <div style="height:100%;width:{{ mem.get('percent', 0) }}%;background:linear-gradient(90deg,var(--blue),var(--coral));border-radius:3px;"></div>
+        </div>
+        <div class="text-muted" style="font-size:11px;margin-top:4px;">
+          {{ "%.1f"|format(mem.get('used', 0) / 1073741824) }} GB used /
+          {{ "%.1f"|format(mem.get('total', 0) / 1073741824) }} GB total
+        </div>
+      </div>
+
+      <!-- Disk -->
+      {% set disk = sys.get('disk', {}) %}
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <span style="font-size:12px;color:var(--muted);font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:.06em;">Disk</span>
+          <span class="mono" style="font-size:13px;">{{ disk.get('percent', 0) }}%</span>
+        </div>
+        <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;">
+          <div style="height:100%;width:{{ disk.get('percent', 0) }}%;background:linear-gradient(90deg,var(--blue),var(--coral));border-radius:3px;"></div>
+        </div>
+        <div class="text-muted" style="font-size:11px;margin-top:4px;">
+          {{ "%.1f"|format(disk.get('free', 0) / 1073741824) }} GB free
+        </div>
+      </div>
+
+      <!-- Process info -->
+      {% set proc = sys.get('process', {}) %}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-top:8px;border-top:1px solid var(--border);">
+        <div>
+          <div class="text-muted" style="font-size:10px;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;">PID</div>
+          <div class="mono" style="font-size:14px;">{{ proc.get('pid', '—') }}</div>
+        </div>
+        <div>
+          <div class="text-muted" style="font-size:10px;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;">Threads</div>
+          <div class="mono" style="font-size:14px;">{{ proc.get('threads', '—') }}</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- DB Pool & App counters -->
+  <div style="display:flex;flex-direction:column;gap:16px;">
+
+    <div class="card">
+      <div class="section-title">DB Connection Pool</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+        {% for label, val in [('Pool Size', pool.get('size', '—')), ('Checked Out', pool.get('checked_out', '—')), ('Overflow', pool.get('overflow', '—'))] %}
+        <div style="text-align:center;padding:12px;background:rgba(0,0,0,.2);border-radius:10px;border:1px solid var(--border);">
+          <div class="mono" style="font-size:20px;font-weight:700;color:var(--blue);">{{ val }}</div>
+          <div class="text-muted" style="font-size:10px;margin-top:4px;">{{ label }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Application Counters</div>
+      {% set atx = app.get('transactions', {}) %}
+      {% set awh = app.get('webhooks', {}) %}
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        {% for label, val, color in [
+            ('Transactions — Total', atx.get('total', '—'), 'var(--text)'),
+            ('Transactions — Pending', atx.get('pending', '—'), '#FFC107'),
+            ('Transactions — Failed', atx.get('failed', '—'), 'var(--coral)'),
+            ('Webhooks — Failed', awh.get('failed', '—'), 'var(--coral)'),
+            ('Audit Logs', app.get('audit_logs', {}).get('total', '—'), 'var(--text)')
+          ] %}
+        <div class="flex items-center justify-between" style="padding:8px 12px;border-radius:8px;background:rgba(255,255,255,.02);">
+          <span style="font-size:12px;color:var(--muted);">{{ label }}</span>
+          <span class="mono" style="font-size:13px;color:{{ color }};">{{ val }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

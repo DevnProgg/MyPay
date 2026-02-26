@@ -129,7 +129,7 @@ def verify_payment(transaction_id):
 
 
 
-@payments_bp.route('', methods=['GET'])
+@payments_bp.route('/payments', methods=['GET'])
 @api_key_required()
 def list_payments():
     """

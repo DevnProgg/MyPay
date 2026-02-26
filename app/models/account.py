@@ -17,7 +17,7 @@ class Account(db.Model):
     password = db.Column(db.String(255), nullable=False)
 
     #Encrypted Creds
-    api_key = db.Column(db.String(255), nullable=False, index=True)
+    api_key = db.Column(db.String(255), nullable=True, index=True)
 
     #Timestamps
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)

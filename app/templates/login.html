@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login — PayGateway</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --coral:   #FF6B6B;
+      --blue:    #4ECDC4;
+      --dark:    #0D1B2A;
+      --darker:  #08111A;
+      --card:    #0F1E2D;
+      --border:  #1A2E40;
+      --text:    #E8F4F8;
+      --muted:   #5A7A8A;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--darker);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Decorative background orbs */
+    body::before, body::after {
+      content: '';
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    body::before {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(255,107,107,.12), transparent 70%);
+      top: -200px; right: -200px;
+    }
+    body::after {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(78,205,196,.1), transparent 70%);
+      bottom: -150px; left: -150px;
+    }
+
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-8px); }
+    }
+
+    .login-wrap {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 420px;
+      padding: 20px;
+      animation: fadeSlideUp .5s ease forwards;
+    }
+
+    /* Brand mark */
+    .brand {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .brand-icon {
+      width: 56px; height: 56px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--coral), var(--blue));
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      animation: float 4s ease-in-out infinite;
+      box-shadow: 0 12px 40px rgba(78,205,196,.25);
+    }
+
+    .brand-name {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 26px;
+      background: linear-gradient(135deg, var(--coral), var(--blue));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .brand-sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 4px;
+      font-family: 'Space Mono', monospace;
+      letter-spacing: .05em;
+    }
+
+    /* Card */
+    .login-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px;
+    }
+
+    .card-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 20px;
+      margin-bottom: 6px;
+    }
+
+    .card-sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 28px;
+    }
+
+    /* Form elements */
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 11px;
+      font-family: 'Space Mono', monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 7px;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    .input-field {
+      width: 100%;
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px 12px 40px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      transition: border-color .2s, background .2s;
+      outline: none;
+    }
+    .input-field:focus { border-color: var(--blue); background: rgba(78,205,196,.03); }
+    .input-field::placeholder { color: var(--muted); }
+
+    /* Error */
+    .error-box {
+      background: rgba(255,107,107,.08);
+      border: 1px solid rgba(255,107,107,.25);
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: var(--coral);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    /* Submit button */
+    .btn-login {
+      width: 100%;
+      background: linear-gradient(135deg, var(--coral), #FF8E53);
+      color: white;
+      border: none;
+      padding: 13px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all .2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 8px;
+      letter-spacing: .02em;
+    }
+    .btn-login:hover {
+      opacity: .9;
+      transform: translateY(-1px);
+      box-shadow: 0 10px 30px rgba(255,107,107,.35);
+    }
+    .btn-login:active { transform: translateY(0); }
+
+    /* Footer note */
+    .login-note {
+      text-align: center;
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 20px;
+      font-family: 'Space Mono', monospace;
+    }
+
+    /* Decorative grid pattern */
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(78,205,196,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(78,205,196,.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+
+  <div class="login-wrap">
+    <!-- Brand -->
+    <div class="brand">
+      <div class="brand-icon">
+        <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+        </svg>
+      </div>
+      <div class="brand-name">PayGateway</div>
+      <div class="brand-sub">ADMIN CONSOLE</div>
+    </div>
+
+    <!-- Card -->
+    <div class="login-card">
+      <h2 class="card-title">Welcome back</h2>
+      <p class="card-sub">Sign in to access the admin dashboard.</p>
+
+      {% if error %}
+      <div class="error-box">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+        {{ error }}
+      </div>
+      {% endif %}
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="error-box" style="
+            {% if category == 'success' %}background:rgba(78,205,196,.08);border-color:rgba(78,205,196,.25);color:var(--blue);{% endif %}
+            {% if category == 'info' %}background:rgba(90,122,138,.08);border-color:rgba(90,122,138,.25);color:var(--muted);{% endif %}
+          ">{{ message }}</div>
+        {% endfor %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('admin_dashboard.login') }}">
+        <div class="form-group">
+          <label class="form-label" for="username">Username</label>
+          <div class="input-wrap">
+            <span class="input-icon">
+              <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+              </svg>
+            </span>
+            <input
+              class="input-field"
+              type="text"
+              id="username"
+              name="username"
+              placeholder="admin"
+              autocomplete="username"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <div class="input-wrap">
+            <span class="input-icon">
+              <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+              </svg>
+            </span>
+            <input
+              class="input-field"
+              type="password"
+              id="password"
+              name="password"
+              placeholder="••••••••"
+              autocomplete="current-password"
+              required
+            />
+          </div>
+        </div>
+
+        <button type="submit" class="btn-login">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+          </svg>
+          Sign in
+        </button>
+      </form>
+    </div>
+
+    <p class="login-note">Protected area — authorised personnel only</p>
+  </div>
+</body>
+</html>

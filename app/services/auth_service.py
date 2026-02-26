@@ -64,3 +64,17 @@ def merchant_login(data : dict) -> dict[str, dict | Any] | None:
                 return response
     except Exception as e:
         raise AppError(str(e))
+
+def admin_login_service(data : dict) -> dict[str, str] | None:
+    try:
+        account = Account.query.filter_by(username= data["username"], password= data["password"]).first()
+        if account:
+            raise AccountNotFound("Account not found")
+
+        response = {
+            "admin_user" : data["username"],
+            "access_token" : generate_merchant_api_key(prefix="admin_live")
+        }
+        return response
+    except AppError:
+        raise BadRequest("Account not found")

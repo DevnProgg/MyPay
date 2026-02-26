@@ -9,6 +9,7 @@ from app.api.webhooks import webhooks_bp
 from app.api.admin import admin_bp
 from app.api.health import health_bp
 from app.api.auth import auth_bp
+from app.api.admin_dashboard import admin_dashboard_bp
 
 # Export blueprints
 __all__ = [
@@ -18,6 +19,7 @@ __all__ = [
     'health_bp',
     'auth_bp',
     'register_blueprints',
+    'admin_dashboard_bp'
 ]
 
 
@@ -36,3 +38,4 @@ def register_blueprints(app):
     app.register_blueprint(admin_bp, url_prefix=f'{url_base}/admin')
     app.register_blueprint(health_bp, url_prefix=f'{url_base}/health')
     app.register_blueprint(auth_bp, url_prefix=f'{url_base}/auth')
+    app.register_blueprint(admin_dashboard_bp, url_prefix=f'{url_base}/')

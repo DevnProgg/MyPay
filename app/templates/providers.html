@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Providers — PayGateway Admin{% endblock %}
+{% block topbar_title %}Payment Providers{% endblock %}
+
+{% block content %}
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;">
+  {% for provider in providers %}
+  <div class="card" style="cursor:default;">
+    <div class="flex items-center justify-between mb-2">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,rgba(255,107,107,.15),rgba(78,205,196,.15));display:flex;align-items:center;justify-content:center;border:1px solid var(--border);">
+          <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:var(--text);">{{ (provider.name or provider)[:2] | upper }}</span>
+        </div>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;">{{ (provider.name or provider) | upper }}</div>
+          <div class="text-muted" style="font-size:11px;font-family:'Space Mono',monospace;">Payment Provider</div>
+        </div>
+      </div>
+
+      {% if provider.is_active is defined %}
+        <span class="badge {% if provider.is_active %}badge-success{% else %}badge-neutral{% endif %}">
+          {{ 'Active' if provider.is_active else 'Inactive' }}
+        </span>
+      {% else %}
+        <span class="badge badge-success">Available</span>
+      {% endif %}
+    </div>
+
+    {% if provider.is_configured is defined %}
+    <div class="flex items-center gap-2 mt-2" style="padding-top:14px;border-top:1px solid var(--border);">
+      <span class="health-dot {% if provider.is_configured %}healthy{% else %}unhealthy{% endif %}"></span>
+      <span style="font-size:12px;color:var(--muted);">
+        {% if provider.is_configured %}Configured{% else %}Not configured{% endif %}
+      </span>
+      {% if provider.last_updated %}
+      <span class="mono text-muted" style="font-size:10px;margin-left:auto;">{{ provider.last_updated[:10] }}</span>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="card" style="grid-column:1/-1;text-align:center;color:var(--muted);padding:40px;">
+    No payment providers found.
+  </div>
+  {% endfor %}
+</div>
+
+{% endblock %}

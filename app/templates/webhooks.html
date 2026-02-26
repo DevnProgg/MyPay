@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Webhooks — PayGateway Admin{% endblock %}
+{% block topbar_title %}Webhooks{% endblock %}
+
+{% block topbar_actions %}
+  <form method="POST" action="{{ url_for('admin_dashboard.retry_all_webhooks') }}" style="margin:0;">
+    <button type="submit" class="btn-primary btn-sm">
+      <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+      Retry All Failed
+    </button>
+  </form>
+{% endblock %}
+
+{% block content %}
+
+<!-- Stats row -->
+<div class="stat-grid" style="grid-template-columns:repeat(4,1fr);">
+  <div class="stat-card">
+    <div class="stat-label">Total Events</div>
+    <div class="stat-value">{{ stats.get('total', '—') }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Processed</div>
+    <div class="stat-value" style="color:var(--blue);">{{ stats.get('processed', '—') }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Failed / DLQ</div>
+    <div class="stat-value" style="color:var(--coral);">{{ dlq.get('count', '—') }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Pending</div>
+    <div class="stat-value" style="color:#FFC107;">{{ stats.get('pending', '—') }}</div>
+  </div>
+</div>
+
+<!-- Filters -->
+<form method="GET" action="{{ url_for('admin_dashboard.webhooks') }}">
+  <div class="filter-bar">
+    <label>
+      Provider
+      <select name="provider" class="input-field">
+        <option value="">All</option>
+        <option value="mpesa" {% if filters.provider == 'mpesa' %}selected{% endif %}>M-Pesa</option>
+        <option value="cpay"  {% if filters.provider == 'cpay'  %}selected{% endif %}>CPay</option>
+      </select>
+    </label>
+    <label>
+      Processed
+      <select name="processed" class="input-field">
+        <option value="">Any</option>
+        <option value="true"  {% if filters.processed == 'true'  %}selected{% endif %}>Yes</option>
+        <option value="false" {% if filters.processed == 'false' %}selected{% endif %}>No</option>
+      </select>
+    </label>
+    <label>
+      Verified
+      <select name="verified" class="input-field">
+        <option value="">Any</option>
+        <option value="true"  {% if filters.verified == 'true'  %}selected{% endif %}>Yes</option>
+        <option value="false" {% if filters.verified == 'false' %}selected{% endif %}>No</option>
+      </select>
+    </label>
+    <div style="display:flex;align-items:flex-end;gap:8px;">
+      <button type="submit" class="btn-primary btn-sm">Filter</button>
+      <a href="{{ url_for('admin_dashboard.webhooks') }}" class="btn-secondary btn-sm">Clear</a>
+    </div>
+  </div>
+</form>
+
+<div class="card" style="padding:0;overflow:hidden;">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Provider</th>
+          <th>Event</th>
+          <th>Processed</th>
+          <th>Verified</th>
+          <th>Retries</th>
+          <th>Received</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for event in result.get('items', []) %}
+        <tr>
+          <td class="mono text-muted" style="font-size:11px;">{{ event.id[:8] }}…</td>
+          <td><span class="badge badge-neutral">{{ (event.provider or '—') | upper }}</span></td>
+          <td class="mono" style="font-size:12px;">{{ event.get('event_type', '—') }}</td>
+          <td>
+            <span class="badge {% if event.processed %}badge-success{% else %}badge-warning{% endif %}">
+              {{ 'Yes' if event.processed else 'No' }}
+            </span>
+          </td>
+          <td>
+            <span class="badge {% if event.verified %}badge-success{% else %}badge-danger{% endif %}">
+              {{ 'Yes' if event.verified else 'No' }}
+            </span>
+          </td>
+          <td class="mono">{{ event.get('retry_count', 0) }}</td>
+          <td class="mono text-muted" style="font-size:11px;">{{ (event.get('created_at', '—'))[:19] }}</td>
+          <td>
+            {% if not event.processed %}
+            <form method="POST" action="{{ url_for('admin_dashboard.retry_webhook', event_id=event.id) }}" style="margin:0;">
+              <button type="submit" class="btn-secondary btn-sm">Retry</button>
+            </form>
+            {% else %}
+              <span class="text-muted" style="font-size:12px;">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" style="text-align:center;color:var(--muted);padding:32px;font-size:13px;">No webhook events found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Dead Letter Queue -->
+{% if dlq.get('count', 0) > 0 %}
+<div class="card mt-2" style="border-color:rgba(255,107,107,.25);">
+  <div class="flex items-center gap-2 mb-2">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="var(--coral)" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+    </svg>
+    <div class="section-title" style="margin-bottom:0;color:var(--coral);">Dead Letter Queue ({{ dlq.count }} items)</div>
+  </div>
+  <p class="text-muted" style="font-size:12px;">These webhooks exceeded max retry attempts and require manual intervention.</p>
+  <div class="table-wrap mt-2">
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Provider</th><th>Event</th><th>Retries</th><th>Last Attempt</th></tr>
+      </thead>
+      <tbody>
+        {% for item in dlq.get('items', []) %}
+        <tr>
+          <td class="mono text-muted" style="font-size:11px;">{{ item.id[:8] }}…</td>
+          <td><span class="badge badge-neutral">{{ (item.provider or '—') | upper }}</span></td>
+          <td class="mono" style="font-size:12px;">{{ item.get('event_type', '—') }}</td>
+          <td class="mono" style="color:var(--coral);">{{ item.get('retry_count', 0) }}</td>
+          <td class="mono text-muted" style="font-size:11px;">{{ (item.get('updated_at', '—'))[:19] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Pagination -->
+{% set pagination = result.get('pagination', {}) %}
+{% if pagination %}
+<div class="pagination">
+  <span class="text-muted mono" style="font-size:11px;margin-right:8px;">{{ pagination.get('total', 0) }} total</span>
+  {% if pagination.get('has_prev') %}
+    <a href="?page={{ pagination.page - 1 }}&provider={{ filters.provider }}&processed={{ filters.processed }}&verified={{ filters.verified }}" class="page-btn">‹</a>
+  {% endif %}
+  {% for p in range(1, pagination.get('pages', 1) + 1) %}
+    {% if p == pagination.get('page') %}
+      <span class="page-btn active">{{ p }}</span>
+    {% elif p <= 2 or p > pagination.pages - 2 or (p >= pagination.page - 1 and p <= pagination.page + 1) %}
+      <a href="?page={{ p }}&provider={{ filters.provider }}&processed={{ filters.processed }}&verified={{ filters.verified }}" class="page-btn">{{ p }}</a>
+    {% endif %}
+  {% endfor %}
+  {% if pagination.get('has_next') %}
+    <a href="?page={{ pagination.page + 1 }}&provider={{ filters.provider }}&processed={{ filters.processed }}&verified={{ filters.verified }}" class="page-btn">›</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}
