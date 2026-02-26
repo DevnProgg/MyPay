@@ -1,12 +1,14 @@
 """
 Pytest Configuration and Fixtures
 """
+from unittest.mock import patch
 
+import fakeredis
 import pytest
 import os
 from app import create_app
 from app.extensions import db as _db
-from app.models import Transaction, AuditLog, WebhookEvent, ProviderConfig
+from app.models import Transaction, WebhookEvent
 
 
 @pytest.fixture(scope='session')
@@ -15,7 +17,7 @@ def app():
     # Set testing environment
     os.environ['FLASK_ENV'] = 'testing'
 
-    app = create_app('testing')
+    app = create_app()
 
     # Establish application context
     ctx = app.app_context()
@@ -36,24 +38,38 @@ def db(app):
     _db.drop_all()
 
 
+from sqlalchemy.orm import scoped_session, sessionmaker
+
+
 @pytest.fixture(scope='function')
 def session(db):
     """Create a new database session for a test"""
     connection = db.engine.connect()
     transaction = connection.begin()
 
-    session = db.create_scoped_session(
-        options={'bind': connection, 'binds': {}}
+    Session = scoped_session(
+        sessionmaker(bind=connection)
     )
 
-    db.session = session
+    db.session = Session
 
-    yield session
+    yield Session
 
     transaction.rollback()
     connection.close()
-    session.remove()
+    Session.remove()
 
+@pytest.fixture(scope="function")
+def redis_client():
+    """
+    Fake Redis for tests + patch the app redis client.
+    """
+    fake_redis = fakeredis.FakeStrictRedis(decode_responses=True)
+
+    with patch("app.services.idempotency_service.redis_client", fake_redis):
+        yield fake_redis
+
+    fake_redis.flushall()
 
 @pytest.fixture(scope='function')
 def client(app):
@@ -84,6 +100,11 @@ def sample_transaction(session):
     return transaction
 
 
+@pytest.fixture(autouse=True)
+def clear_redis(redis_client):
+    yield
+    redis_client.flushall()
+
 @pytest.fixture(scope='function')
 def sample_webhook_event(session, sample_transaction):
     """Create a sample webhook event for testing"""
@@ -108,28 +129,3 @@ def sample_webhook_event(session, sample_transaction):
 
     return webhook
 
-
-@pytest.fixture(scope='function')
-def mock_mpesa_response():
-    """Mock M-Pesa API response"""
-    return {
-        'MerchantRequestID': 'mock-merchant-id',
-        'CheckoutRequestID': 'mock-checkout-id',
-        'ResponseCode': '0',
-        'ResponseDescription': 'Success. Request accepted for processing',
-        'CustomerMessage': 'Success. Request accepted for processing'
-    }
-
-
-@pytest.fixture(scope='function')
-def mock_stripe_payment_intent():
-    """Mock Stripe PaymentIntent response"""
-    return {
-        'id': 'pi_mock_123',
-        'object': 'payment_intent',
-        'amount': 100000,
-        'currency': 'usd',
-        'status': 'requires_payment_method',
-        'client_secret': 'pi_mock_123_secret_mock',
-        'payment_method_types': ['card']
-    }
