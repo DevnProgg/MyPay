@@ -7,3 +7,6 @@
 .idea/
 __pycache__/
 .env
+.pytest_cache/
+.venv/
+venv/
