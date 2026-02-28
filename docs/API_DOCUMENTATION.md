@@ -108,7 +108,7 @@ Force a real-time status check with the payment provider. Useful if a webhook ha
 `POST /api/v1/webhooks/<provider>`
 
 Endpoint for payment providers to send asynchronous notifications.
-- **Providers supported:** `mpesa`, `cpay`
+- **Providers supported:** `Depends on provider adapters added to the registry`
 - **Security:** Varies by provider (e.g., `X-CPay-Signature` header for CPay).
 
 ---
