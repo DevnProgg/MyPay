@@ -37,7 +37,7 @@ This application serves as a central hub for payment operations. Instead of inte
     ```env
     SECRET_KEY=your-secret-key
     JWT_SECRET_KEY=your-jwt-secret
-    DATABASE_URI=postgresql://openpg:dev@db:5432/payment_gateway_dev
+    DATABASE_URI=your-database-url
     REDIS_HOST=redis
     REDIS_PORT=6379
     ```
