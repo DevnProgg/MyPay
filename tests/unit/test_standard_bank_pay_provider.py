@@ -19,14 +19,14 @@ class TestStandardBankPayProvider:
     def test_initialize_payment_success(self, mock_post, provider):
         """Test successful payment initialization"""
         mock_response = Mock()
-        mock_response.status_code = 200
+        mock_response.status_code = 201
         mock_response.json.return_value = {
             "sbp_txn_ref": "txn_12345",
             "processing_state": "AWAITING_CUSTOMER",
-            "approval_url": "http://127.0.0.1:5050/payments/initiate",
+            "approval_url": "http://localhost:5050/__simulate__/webhook/txn_12345",
             "expires_in_seconds": 300,
             "meta": {
-                "risk_score": 0.1
+                "risk_score": "LOW"
             }
         }
         mock_post.return_value = mock_response
@@ -66,6 +66,22 @@ class TestStandardBankPayProvider:
         with pytest.raises(PaymentInitializationError, match="Invalid input"):
             provider.initialize_payment(
                 amount=100.0,
+                currency="ZAR",
+                customer_data={"msisdn": "+27820000000"},
+                metadata={"request_id": "req_abc123"}
+            )
+
+    @patch('requests.post')
+    def test_initialize_payment_exceeds_limit(self, mock_post, provider):
+        """Test that amounts over 100,000 cents are rejected with 422"""
+        mock_response = Mock()
+        mock_response.status_code = 422
+        mock_response.text = "Amount exceeds daily limit"  # Fixed: provider reads resp.text, not resp.json()
+        mock_post.return_value = mock_response
+
+        with pytest.raises(PaymentInitializationError, match="Amount exceeds daily limit"):
+            provider.initialize_payment(
+                amount=1500.0,  # 150,000 cents — over the gateway's 100,000 limit
                 currency="ZAR",
                 customer_data={"msisdn": "+27820000000"},
                 metadata={"request_id": "req_abc123"}

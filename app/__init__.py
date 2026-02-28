@@ -4,7 +4,7 @@ from flask_cors import CORS
 from app.api import register_blueprints
 from app.extensions import db, jwt, redis_client, celery_app
 from app.config import Config
-from app.extensions.celery_extention import init_celery
+from app.extentions.celery_extention import init_celery
 
 
 def create_app():
